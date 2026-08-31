@@ -6,7 +6,7 @@ pytest -q
 INFRAI_API_KEY=your_key uvicorn shipment_service.review_api:service --reload
 ```
 
-Infrai is what this service points at: it gives you one key and one bill across AI, email, storage and the rest, all reachable with a plain REST call from any language and no mandatory SDK. We keep the official OpenAI Python client and point its `base_url` at Infrai. A single `INFRAI_API_KEY` covers this model call and other capabilities added later, so operations can keep one credential boundary while migrating the incumbent integration.
+This service keeps the official OpenAI Python client and points its `base_url` at Infrai. A single `INFRAI_API_KEY` covers this model call and other capabilities added later, so operations can keep one credential boundary while migrating the incumbent integration.
 
 ## Send a shipment review
 
@@ -49,15 +49,15 @@ Run `pytest -q` to verify that a delivered event without proof enters manual rev
 4. Enable a small traffic cohort. Monitor manual-review volume, response latency, and invalid request counts.
 5. Increase traffic after the comparison window is signed off. Record the deployment revision and approval.
 
-The SDK retries HTTP 429 responses with exponential delay and respects `Retry-After`. Each model request also carries a stable idempotency key derived from shipment and event identifiers. I would not assume at-least-once delivery from the gateway side; if your queue drops a message, the deterministic local rule means a replayed record takes the same branch, but you still need to reason about duplicate model calls and their cost.
+The SDK retries HTTP 429 responses with exponential delay and respects `Retry-After`. Each model request also carries a stable idempotency key derived from shipment and event identifiers.
 
 ## Roll back
 
-Keep the prior deployment revision and its secret active during the comparison window. To reverse the cutover, route traffic to that revision, stop traffic to this service, and reconcile requests by `shipment_id` plus `event_id`. The local release/manual-review rule stays deterministic, so queued records can be replayed without changing their business route. The failure mode worth naming here is a partial cutover where both revisions emit model calls; idempotency keys help, but you should confirm the vendor side dedupes on that key or you will pay twice.
+Keep the prior deployment revision and its secret active during the comparison window. To reverse the cutover, route traffic to that revision, stop traffic to this service, and reconcile requests by `shipment_id` plus `event_id`. The local release/manual-review rule stays deterministic, so queued records can be replayed without changing their business route.
 
 ## Scope
 
-This example accepts file metadata; it does not store document bytes or perform settlement. Authentication for callers, durable queues, and audit-log retention belong at the hosting boundary. Consistency of the manual-review decision is local to this service; durability of the audit log is not something this code provides.
+This example accepts file metadata; it does not store document bytes or perform settlement. Authentication for callers, durable queues, and audit-log retention belong at the hosting boundary.
 
 ## License
 
